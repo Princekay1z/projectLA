@@ -1,15 +1,16 @@
 import {useState, useEffect} from "react";
 import {ethers} from "ethers";
-import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
+import abi from "./contracts/abi.json";
 
 export default function HomePage() {
   const [ethWallet, setEthWallet] = useState(undefined);
   const [account, setAccount] = useState(undefined);
-  const [atm, setATM] = useState(undefined);
-  const [balance, setBalance] = useState(undefined);
+  const [contract, setContract] = useState(undefined);
+  const [factor, setFactor] = useState(undefined);
+  const [wi, setWi] = useState(undefined);
 
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  const atmABI = atm_abi.abi;
+  const contractAddress = "0x4e4e9BE7AC99FA68f3BBE972f0C7ec0Fb04681Aa";
+  const ABI = abi;
 
   const getWallet = async() => {
     if (window.ethereum) {
@@ -42,43 +43,53 @@ export default function HomePage() {
     handleAccount(accounts);
     
     // once wallet is set we can get a reference to our deployed contract
-    getATMContract();
+    getContract();
   };
 
-  const getATMContract = () => {
+  const getContract = () => {
     const provider = new ethers.providers.Web3Provider(ethWallet);
     const signer = provider.getSigner();
-    const atmContract = new ethers.Contract(contractAddress, atmABI, signer);
+    const theContract = new ethers.Contract(contractAddress, ABI, signer);
  
-    setATM(atmContract);
+    setContract(theContract);
   }
 
-  const getBalance = async() => {
-    if (atm) {
-      setBalance((await atm.getBalance()).toNumber());
+  const getFactor = async() => {
+    if (contract) {
+      setFactor((await contract.factor()).toNumber());
     }
   }
 
-  const deposit = async() => {
-    if (atm) {
-      let tx = await atm.deposit(1);
+  const resetFactor = async(newFactor) => {
+    if (contract) {
+      let tx = await contract.resetFactor(newFactor);
       await tx.wait()
-      getBalance();
+      getFactor();
     }
   }
 
-  const withdraw = async() => {
-    if (atm) {
-      let tx = await atm.withdraw(1);
+  const multiplyFactor = async(value) => {
+    if (contract) {
+      let tx = await contract.multiplyFactor(value);
       await tx.wait()
-      getBalance();
+      getFactor();
     }
   }
+
+  const divideFactor = async(value) => {
+    if (contract) {
+      let tx = await contract.divideFactor(value);
+      await tx.wait()
+      getFactor();
+    }
+  }
+
+
 
   const initUser = () => {
     // Check to see if user has Metamask
     if (!ethWallet) {
-      return <p>Please install Metamask in order to use this ATM.</p>
+      return <p>Please install Metamask in order to use this Dapp.</p>
     }
 
     // Check to see if user is connected. If not, connect to their account
@@ -86,25 +97,44 @@ export default function HomePage() {
       return <button onClick={connectAccount}>Please connect your Metamask wallet</button>
     }
 
-    if (balance == undefined) {
-      getBalance();
+    if (factor == undefined) {
+      getFactor();
     }
 
     return (
       <div>
         <p>Your Account: {account}</p>
-        <p>Your Balance: {balance}</p>
-        <button onClick={deposit}>Deposit 1 ETH</button>
-        <button onClick={withdraw}>Withdraw 1 ETH</button>
+        <p>The Factor: {factor}</p>
+        <hr></hr>
+        <hr></hr>
+        <hr></hr>
+        <hr></hr>
+        <hr></hr>
+        {workingInput()}
+        <hr></hr>
+        <button onClick={() => (resetFactor(wi))}>set a new factor</button>
+        <hr></hr>
+        <button onClick={() => (multiplyFactor(wi))}> multiply the factor by the value</button>
+        <hr></hr>
+        <button onClick={() => (divideFactor(wi))}>divide the factor by the value</button>
       </div>
     )
   }
 
   useEffect(() => {getWallet();}, []);
 
+  const workingInput = () => {
+    return (
+      <form>
+        <label> enter value here </label>
+        <input type="number" value={wi} onChange={(event) => {setWi(event.target.value)}}></input>
+      </form>
+    )
+  }
+
   return (
     <main className="container">
-      <header><h1>Welcome to the Metacrafters ATM!</h1></header>
+      <header><h1>Welcome to my Calculator App!</h1></header>
       {initUser()}
       <style jsx>{`
         .container {
